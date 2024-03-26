@@ -1,1 +1,1 @@
-# quality-digitaltwin
+# quality-digital-twin
