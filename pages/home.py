@@ -29,7 +29,7 @@ def dropdown_category():
  ・sprint_submit = 更新するスプリント状態を表示するエリア
  ・edit_button =  Sprint Planningのボタン
  ・dashboard_button = dashboardのボタン
- ・db_button = QCT-DBのボタン
+ ・db_button = QDT-DBのボタン
  ・create_category_button = Create Categoryのボタン
 '''
 def home_layout(project_name=None, category_num=None):

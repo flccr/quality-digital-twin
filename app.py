@@ -4,11 +4,10 @@ from dash import html, dcc, callback
 from dash.dependencies import Input, Output
 from urllib.parse import urlparse, parse_qs
 from urllib import parse
-from pages import home, edit, create_category, db, dashboard
+from pages import home, edit, create_category, db, dashboard, qa
 from nft import nft
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-
 
 '''
 ●機能
@@ -39,16 +38,17 @@ app.layout = html.Div(
   )
 
 
+
 #実行ファイルを移す
 @app.callback(
   Output('page-content', 'children'),
   Input('url', 'href')
   )
 def display_page(href):
-  print('href : %s' %href)
+  
   url_components = parse.urlparse(href)
   pathname = url_components.path
-  print('pathname : %s' %pathname)
+
   if pathname == '/':
     return home.home_layout()
   else:
@@ -62,7 +62,7 @@ def display_page(href):
     state = query_params.get('state', [None])[0]
     pid = query_params.get('pid', [None])[0]
     nid = query_params.get('nid', [None])[0]
-    
+
     if pathname_part == '/home':
       return home.home_layout(project_name, category_num)
     elif pathname == '/create_category': 
@@ -75,6 +75,8 @@ def display_page(href):
       return dashboard.dashboard_layout(params)
     elif pathname_part =='/nft':
       return nft.nft_layout(params)
+    elif pathname_part =='/qa':
+      return qa.qa_layout(params)
 
 if __name__ == '__main__':
     app.run_server(debug=True)

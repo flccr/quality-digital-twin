@@ -112,17 +112,27 @@ def write_project(pname, nsprint, status):
 #########################################################
 def write_node(pid, node_name, type, subtype, content, # 品質ノード
                contribution, destination, achievement, # サポートリンク
-               child_nid=None):
+               child_nid=None, content_type=None):
   try:
     connector = get_connector()    
     cursor = connector.cursor()
 
     # 品質ノード(nid)検索
-    check_contribution = '''
-                        SELECT nid
-                        FROM qualitynode
-                        WHERE content ->> 'subchar' = %s AND pid = %s;
-                      '''
+    if content_type != None:
+      print('content_typeは None以外 です。statement を検索します。')
+      check_contribution = '''
+                  SELECT nid
+                  FROM qualitynode
+                  WHERE content ->> 'statement' = %s AND pid = %s;
+              '''
+    else:
+      print('content_typeは None です。subchar を検索します。')
+      check_contribution = '''
+                  SELECT nid
+                  FROM qualitynode
+                  WHERE content ->> 'subchar' = %s AND pid = %s;
+                '''
+                    
     cursor.execute(check_contribution, (node_name, pid))
     nid = cursor.fetchone()
 
@@ -176,13 +186,32 @@ def write_node(pid, node_name, type, subtype, content, # 品質ノード
       connector.commit()
 
       # 品質ノード名に合致する品質ノードの検索
-      check_contribution = '''
+      if content_type == 1:
+        check_contribution = '''
+                   SELECT nid
+                   FROM qualitynode
+                   WHERE content ->> 'statement' = %s AND pid = %s;
+                '''
+        cursor.execute(check_contribution, (node_name, pid))
+        nid = cursor.fetchone()
+      elif content_type == 2:
+        print(f'content_type は {content_type} でした。つまり 2')
+        print(f'json.dumps(content) は {json.dumps(content)}')
+        check_contribution = '''
+                  SELECT nid
+                  FROM qualitynode
+                  WHERE content::text = %s AND pid = %s;
+                '''
+        cursor.execute(check_contribution, (json.dumps(content), pid))
+        nid = cursor.fetchone()
+      else:
+        check_contribution = '''
                    SELECT nid
                    FROM qualitynode
                    WHERE content ->> 'subchar' = %s AND pid = %s;
                 '''
-      cursor.execute(check_contribution, (node_name, pid))
-      nid = cursor.fetchone()
+        cursor.execute(check_contribution, (node_name, pid))
+        nid = cursor.fetchone()
 
       # support書き込み
       insert_query1 = '''
@@ -236,6 +265,60 @@ def check_node(pid, node_name):
   return message
 
 #########################################################
+# 機能：  品質ノードの確認 ###
+# 入力：  pid プロジェクトID, node_name 品質ノード名（？）
+# 戻り値：品質ノードがある場合にはそのレコード，そうでない場合'none'
+#########################################################
+def check_statement(pid, node_name):
+  try:
+    connector = get_connector()       
+    cursor = connector.cursor()
+
+    check_aim = ''' 
+            SELECT * FROM qualitynode
+            WHERE content ->> 'statement' = %s AND pid = %s;
+          '''
+    cursor.execute(check_aim, (node_name, pid,))
+    result = cursor.fetchone()
+    message = result if result is not None else 'none'
+
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return message
+
+#########################################################
+# 機能：  品質ノードの確認 ###
+# 入力：  pid プロジェクトID, node_name 品質ノード名（？）
+# 戻り値：品質ノードがある場合にはそのレコード，そうでない場合'none'
+#########################################################
+def check_uuid(pid, node_name):
+  try:
+    connector = get_connector()       
+    cursor = connector.cursor()
+
+    check_aim = ''' 
+            SELECT * FROM qualitynode
+            WHERE content ->> 'uuid' = %s AND pid = %s;
+          '''
+    cursor.execute(check_aim, (node_name, pid,))
+    result = cursor.fetchone()
+    message = result if result is not None else 'none'
+
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return message
+
+#########################################################
 # 機能：  品質ノード(nid)をサポートする品質ノードのリストを作る
 # 戻り値：品質ノードのレコードのリスト
 #########################################################
@@ -247,7 +330,7 @@ def make_child(nid):
     cursor = connector.cursor()
 
     children = '''
-        SELECT qualitynode.type, qualitynode.content, support.contribution
+        SELECT qualitynode.type, qualitynode.content, support.contribution, qualitynode.subtype
         FROM qualitynode
         JOIN support ON qualitynode.nid=support.source
         WHERE destination=%s;
@@ -513,3 +596,272 @@ def get_nodes(pid):
     connector.close()
 
   return result
+
+
+##############
+#追加
+##############
+
+#########################################################
+# 機能：葉の取り出し
+# 入力：　pid プロジェクトID
+# 戻り値：　result　葉のデータ 
+#########################################################
+def get_leaf(pid):
+  try:
+    # PostgreSQLに接続
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    check_aim = '''
+      SELECT qn.*
+      FROM qualitynode qn
+      LEFT JOIN support s ON qn.nid = s.destination
+      WHERE qn.pid = %s AND s.destination IS NULL
+      '''
+    cursor.execute(check_aim,(pid,))
+    result = cursor.fetchall()
+    
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return result
+
+#########################################################
+# 機能：親のIDを取り出し
+# 入力：　nid ノードのID
+# 戻り値：　result　親のnode id
+#########################################################
+def read_parent(nid):
+  try:
+    # PostgreSQLに接続
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    check_aim = '''
+      SELECT destination
+      FROM support
+      WHERE source = %s
+      '''
+    cursor.execute(check_aim, (nid,))
+    result = cursor.fetchall()
+    
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return result
+
+#########################################################
+# 機能：自分のノード名の取り出し
+# 入力：　nid ノードID
+# 戻り値：　result　ノードの名前取り出し 
+#########################################################
+def check_node_nid(nid):
+  try:
+    connector = get_connector()            
+    cursor = connector.cursor()
+
+    check_aim = '''
+              SELECT content ->> 'subchar'
+              FROM qualitynode
+              WHERE nid = %s ;
+          '''
+    cursor.execute(check_aim, (nid,))
+    result = cursor.fetchone()
+
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return result
+
+#########################################################
+# 機能：タイプの取り出し
+# 入力：　pid プロジェクトIDの取り出し
+# 戻り値：　result　nodeのtype 
+#########################################################
+def get_nodes_type(pid):
+  try:
+    connector = get_connector()            
+    cursor = connector.cursor()
+
+    check_aim = '''
+              SELECT *
+              FROM qualitynode
+              WHERE (pid = %s) AND (type = 'ACT' OR type = 'IMP');
+          '''
+    cursor.execute(check_aim, (pid,))
+    result = cursor.fetchall()
+
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return result
+
+#########################################################
+# 機能：達成度を確認
+# 入力：　pid プロジェクトID, node_name ノードの名前, sprint_num スプリントの回数
+# 戻り値：　achievement　達成度　
+#########################################################
+def check_achievement(pid,node_name,sprint_num):
+  try:
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    # 品質ノード名より品質ノードを検索
+    check_contribution = '''
+                        SELECT nid
+                        FROM qualitynode
+                        WHERE content ->> 'subchar' = %s AND pid = %s;
+                    '''
+    cursor.execute(check_contribution, (node_name, pid,))
+    nid = cursor.fetchone()
+
+    # 品質ノードよりログを調べ前の達成度を得る
+    achievement = 0.0
+    if nid != None:   
+      check_aim = '''
+                  SELECT achievement
+                  FROM log
+                  WHERE nid = %s AND sprint = %s;
+              '''
+      cursor.execute(check_aim, (nid[0],sprint_num,))
+      result = cursor.fetchone()
+      achievement = result[0] if result is not None else 0.0
+        
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return achievement
+
+
+#########################################################
+# 機能： 木構造トップの品質ノードの情報出力
+#入力：pid プロジェクトID
+# 戻り値：　qualityndeの情報すべて
+# Note： 
+#########################################################
+def get_Roots(pid):
+  try:
+    connector = get_connector()             
+    cursor = connector.cursor()
+
+    check_aim = '''
+                 SELECT q.*
+                 FROM qualitynode q
+                 JOIN support s ON q.nid = s.source
+                 WHERE s.destination = '0' AND q.pid = %s;
+              '''
+    cursor.execute(check_aim, (pid,))
+    data = cursor.fetchall()
+    
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return data
+
+
+#########################################################
+# 機能：現在のスプリントを取得
+# 入力： pid プロジェクトID
+# 戻り値： nsprint
+#########################################################
+def get_current_sprint(pid):
+  try:
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    # 品質ノード名より品質ノードを検索
+    check_contribution = '''
+                        SELECT nsprint
+                        FROM project
+                        WHERE pid = %s;
+                    '''
+    cursor.execute(check_contribution, (pid,))
+    nsprint = cursor.fetchone()
+        
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return nsprint
+
+#########################################################
+# 機能：ノードのcontentを取得
+# 入力：　nid ノードID
+# 戻り値： 
+#########################################################
+def get_current_content(nid):
+  try:
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    # 品質ノード名より品質ノードを検索
+    check_contribution = '''
+                        SELECT content
+                        FROM qualitynode
+                        WHERE nid = %s;
+                    '''
+    cursor.execute(check_contribution, (nid,))
+    content = cursor.fetchone()
+        
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return content
+
+#########################################################
+# 機能：ノードのcontentを取得
+# 入力：　nid ノードID
+# 戻り値： 
+#########################################################
+def add_test_result(nid, new_content):
+  try:
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    update_query = '''
+                    UPDATE qualitynode SET content = %s  
+                    WHERE nid = %s;
+                  '''
+    cursor.execute(update_query, (json.dumps(new_content), nid,))
+    connector.commit() 
+        
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return None

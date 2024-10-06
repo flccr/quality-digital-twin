@@ -199,6 +199,7 @@ def create_category_layout():
   prevent_initial_call=True
   )
 def up_data(n_click,input):
+  print(input)
   if n_click is None :
     return dash.no_update
   else:
