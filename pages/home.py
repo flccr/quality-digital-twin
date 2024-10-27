@@ -197,6 +197,22 @@ def home_layout(project_name=None, category_num=None):
                 width=3,
                 className='text-center',
                 align='center'
+              ),
+              dbc.Col(
+                [
+                  dbc.Button(
+                    [
+                      html.Span('カタログ一覧',style={'font-size': '30px'}),
+                      html.Span('📄',style={'font-size': '30px'})
+                      ],
+                    color='secondary',
+                    id={'type': 'button', 'index':'catalog'},
+                    style={'width': '80%', 'height': '80px'}
+                    )
+                  ],
+                width=3,
+                className='text-center',
+                align='center'
               )
             ]
           )
@@ -383,4 +399,6 @@ def redirect_edit_url(button_list, project_name, category):
       return '/create_category'
     elif button_id == 'nft':
       return '/nft'
+    elif button_id == 'catalog':
+      return '/catalog'
     return dash.no_update

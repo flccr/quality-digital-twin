@@ -4,7 +4,7 @@ from dash import html, dcc, callback
 from dash.dependencies import Input, Output
 from urllib.parse import urlparse, parse_qs
 from urllib import parse
-from pages import home, edit, create_category, db, dashboard, qa
+from pages import catalog_edit, home, edit, create_category, db, dashboard, qa, catalog, catalog_details
 from nft import nft
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -77,6 +77,16 @@ def display_page(href):
       return nft.nft_layout(params)
     elif pathname_part =='/qa':
       return qa.qa_layout(params)
+    elif pathname_part =='/catalog':
+      return catalog.catalog_layout(params)
+    elif pathname_part == '/updated_catalog':
+      return catalog_edit.updated_catalog(None, None, None, None, None, None, None, None, None, None)
+    if pathname.startswith('/catalog/details/'):
+        test_id = int(pathname.split('/')[-1])  # URLからtest_idを抽出
+        return catalog_details.catalog_details_layout(test_id)
+    elif pathname.startswith('/catalog/edit/'):
+        test_id = int(pathname.split('/')[-1])  # URLからtest_idを抽出
+        return catalog_edit.catalog_edit_layout(test_id)
 
 if __name__ == '__main__':
     app.run_server(debug=True)

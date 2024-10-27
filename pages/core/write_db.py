@@ -841,9 +841,9 @@ def get_current_content(nid):
   return content
 
 #########################################################
-# 機能：ノードのcontentを取得
-# 入力：　nid ノードID
-# 戻り値： 
+# 機能：ノードのcontentを更新
+# 入力： nid(ノードID), new_content(新しいcontentデータ)
+# 戻り値： なし
 #########################################################
 def add_test_result(nid, new_content):
   try:

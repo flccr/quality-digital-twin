@@ -62,7 +62,7 @@ def get_catalog_by_subchar(subchar):
         cursor = connector.cursor()
         
         info = '''
-            SELECT name
+            SELECT name, overview
             FROM catalog
             WHERE target_qc = %s;
         '''
@@ -120,6 +120,33 @@ def get_catalog_by_name(name):
             WHERE name = %s;
         '''
         cursor.execute(info,(name,))
+        result = cursor.fetchone()
+
+    except (Exception, Error) as error:
+        print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+    finally:
+        cursor.close()
+        connector.close()
+
+    return result
+
+#########################################################
+# 機能：   カタログ情報の取得
+# 入力：   テストの名前
+# 戻り値： DBにあるカタログレコード（リスト）のリスト
+#########################################################
+def get_catalog_by_id(id):
+    try:
+        connector = get_connector()
+        cursor = connector.cursor()
+        
+        info = '''
+            SELECT *
+            FROM catalog
+            WHERE id = %s;
+        '''
+        cursor.execute(info,(id,))
         result = cursor.fetchone()
 
     except (Exception, Error) as error:
@@ -212,3 +239,99 @@ def get_catalog_name_by_json(data):
         connector.close()
 
     return result[0]
+
+
+#########################################################
+# 機能：   カタログ情報の取得
+# 入力：   なし
+# 戻り値： DBにあるカタログレコード（リスト）のリスト
+#########################################################
+def get_catalogs():
+    try:
+        connector = get_connector()
+        cursor = connector.cursor()
+        
+        info = '''
+            SELECT *
+            FROM catalog;
+        '''
+        cursor.execute(info,)
+        test_data = cursor.fetchall()
+
+        # カラム名を取得
+        colnames = [desc[0] for desc in cursor.description]
+        
+        # 辞書形式に変換
+        test_data_dict = [dict(zip(colnames, row)) for row in test_data]
+
+    except (Exception, Error) as error:
+        print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+    finally:
+        cursor.close()
+        connector.close()
+
+    return test_data_dict
+
+
+#########################################################
+# 機能：ノードのcontentを取得
+# 入力： カタログ情報７項目，算出３式
+# 戻り値： None
+#########################################################
+def update_catalog(summary, quality_characteristic, purpose, target, 
+                   execution_steps, calculation_method, result, 
+                   a_formula, b_formula, c_formula, catalog_id):
+  try:
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    update_query = '''
+                    UPDATE catalog 
+                    SET overview = %s, target_qc = %s, description = %s, test_object = %s,
+                    procedure = %s, meas_func = %s, test_result = %s,
+                    prep_cost = %s, testing_cost = %s, analysis_cost = %s
+
+                    WHERE id = %s;
+                  '''
+    cursor.execute(update_query, (summary, quality_characteristic, purpose, target, 
+                   execution_steps, calculation_method, result, 
+                   a_formula, b_formula, c_formula, catalog_id))
+    connector.commit() 
+        
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return None
+
+
+#########################################################
+# 機能：   カタログのパラメータ取得
+# 入力：   テストの名前
+# 戻り値： DBにあるカタログのパラメータ情報
+#########################################################
+def get_formulas(id):
+    try:
+        connector = get_connector()
+        cursor = connector.cursor()
+        
+        info = '''
+            SELECT prep_cost, testing_cost, analysis_cost
+            FROM catalog
+            WHERE id = %s;
+        '''
+        cursor.execute(info,(id,))
+        result = cursor.fetchone()
+
+    except (Exception, Error) as error:
+        print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+    finally:
+        cursor.close()
+        connector.close()
+
+    return result
