@@ -15,12 +15,13 @@ df_pq = pd.read_excel(e_base2, sheet_name=[e_pq])
 
 #ノードを定義 
 class TreeNode:
-    def __init__(self, id, contribution, other, type, subtype):
+    def __init__(self, id, contribution, other, type, subtype, cid=None):
         self.id = id
         self.contribution = contribution
         self.other = other
         self.type = type
         self.subtype = subtype
+        self.cid = cid
         self.children = []
         self.parent = None
     def add_child(self, child_node):
@@ -56,13 +57,14 @@ def create_tree(pid,parent_node_value, content_type=None, parent_node=None):
   if aim_node !='none':
     child_nodes=write_db.make_child(aim_node[0]) # データベースから子ノードを取得
     if parent_node is None:
-      parent_node = TreeNode(parent_node_value, 1, aim_node[5], aim_node[3], aim_node[4])
+      parent_node = TreeNode(parent_node_value, 1, aim_node[5], aim_node[3], aim_node[4], aim_node[2])
     
     if child_nodes != []:
       for row in child_nodes:
         contribution=row[2]
         type=row[0]
         subtype=row[3]
+        cid=row[4]
         if content_type == None:  #保守性の場合
           id= row[1]['subchar']
           if type=='REQ':
@@ -83,10 +85,10 @@ def create_tree(pid,parent_node_value, content_type=None, parent_node=None):
             other=row[1]['description']
           else:
             other=row[1]
-        node = TreeNode(id, contribution, other, type, subtype)
+        node = TreeNode(id, contribution, other, type, subtype, cid)
         
         parent_node.add_child(node)
-        print(f'Creating Tree. Node id:{id}, contribution:{contribution}, other:{other}, type:{type}, subtype:{subtype}')
+        print(f'Creating Tree. Node id:{id}, contribution:{contribution}, other:{other}, type:{type}, subtype:{subtype}, cid:{cid}')
         create_tree(pid, id, content_type, node)
   else:
     parent_node='none'
@@ -134,7 +136,7 @@ def print_tree(node, indent=''):
 '''
 既存のツリーに新しい子ノードを追加し、追加したあとのルートノードを返す
 '''
-def add_child_to_node(existing_root_node, parent_node_id, new_node_id, new_node_contribution, new_node_other, new_node_type, new_node_subtype):
+def add_child_to_node(existing_root_node, parent_node_id, new_node_id, new_node_contribution, new_node_other, new_node_type, new_node_subtype, new_node_cid):
   # デバッグプリントの追加
   print(f'Existing root node: {existing_root_node}')
   print(f'Parent node ID: {parent_node_id}')
@@ -147,7 +149,7 @@ def add_child_to_node(existing_root_node, parent_node_id, new_node_id, new_node_
   def add_child_to_specific_node(node):
     
     if node.id == parent_node_id:
-      new_node = TreeNode(new_node_id, new_node_contribution, new_node_other, new_node_type, new_node_subtype)
+      new_node = TreeNode(new_node_id, new_node_contribution, new_node_other, new_node_type, new_node_subtype, new_node_cid)
       node.add_child(new_node) 
       return existing_root_node  
     for child in node.children:

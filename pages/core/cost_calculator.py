@@ -73,7 +73,9 @@ def cost_calculator(nid):
     if A is not None and B is not None and C is not None:
         total = A + B + C
         print(f"計算結果 (A + B + C): {total}")
+        return total
     else:
         print("計算に失敗したため、合計を計算できませんでした。")
+        return None
 
 cost_calculator(1006)

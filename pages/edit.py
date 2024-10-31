@@ -272,10 +272,10 @@ def make_options_from_catalog(node_subchar, node_data):
     results = catalog_db.get_catalog_by_subchar(node_subchar)
     print(f'result : {results}')
     options = [{'label': row[0], 'value': row[0], 'extra_data': row[1]} for row in results]
-    print("取得したオプション:", options)  # デバッグ用
+    print("取得したオプション:", options)  
 
     keywords = extract_keywords(node_data.id)
-    print("抽出されたキーワード:", keywords)  # デバッグ用
+    print("抽出されたキーワード:", keywords)  
 
     related_options = []
     # 各オプションに対して関連スコアを計算
@@ -283,11 +283,11 @@ def make_options_from_catalog(node_subchar, node_data):
         score = sum(1 for keyword in keywords if keyword in option['extra_data'])  # 一致したキーワードの数をカウント
         if score > 0:  # 一致があれば関連オプションに追加
             related_options.append((score, option))  # スコアとオプションをタプルで追加
-            print(f"オプション '{option['label']}' のスコア:", score)  # デバッグ用
+            print(f"オプション '{option['label']}' のスコア:", score) 
 
     # スコアに基づいて関連オプションをソート（スコアの高い順）
     related_options.sort(reverse=True, key=lambda x: x[0])
-    print("スコア順にソート後の関連オプション:", related_options)  # デバッグ用
+    print("スコア順にソート後のオプション:", related_options)  
 
     new_options = []
 
@@ -296,35 +296,31 @@ def make_options_from_catalog(node_subchar, node_data):
         highest_score = related_options[0][0]
         highest_score_options = [opt for score, opt in related_options if score == highest_score]
         
-        print("一番高いスコア:", highest_score)  # デバッグ用
-        print("一番高いスコアの選択肢:", highest_score_options)  # デバッグ用
+        print("一番高いスコア:", highest_score)  
+        print("一番高いスコアの選択肢:", highest_score_options) 
 
-        # new_options.append({'label': '関連性の高い非機能テスト', 'value': '', 'disabled': True, 'style': {'border': '2px solid #ccc', 'padding': '5px'}})
-        new_options.append({
-                  'label': html.Div('特に関連性の高いテスト', style={'border': '2px solid #228B22', 'padding': '5px', 'margin': '5px 0', 'color':'#000000', 'font-weight': 'bold'}),
-                  'value': 0,
-                  'disabled': True
-              })
-        new_options.extend(highest_score_options)
+        # スタイルを設定して一番高いスコアのオプションを追加
+        for option in highest_score_options:
+            styled_option = option.copy()
+            styled_option['label'] = html.Div(option['label'], style={'color': '#FF0000', 'font-weight': 'bold', 'font-size': '18px'})  # 目立つ色と大きめのフォント
+            new_options.append(styled_option)
     
         # 次に高いスコアのものを取得（存在する場合のみ）
         next_highest_options = [opt for score, opt in related_options if score < highest_score]
-        print("next_highest_options:", next_highest_options)  # デバッグ用
+        print("next_highest_options:", next_highest_options)  
         if next_highest_options:
             next_highest_scores = [score for score, opt in related_options if score < highest_score]
             next_highest_score = next_highest_scores[0] if next_highest_scores else None  # 二番目に高いスコアを取得
 
-            print("二番目に高いスコア:", next_highest_score)  # デバッグ用
-            print("二番目に高いスコアの選択肢:", next_highest_options)  # デバッグ用
+            print("二番目に高いスコア:", next_highest_score)  
+            print("二番目に高いスコアの選択肢:", next_highest_options)  
 
             if next_highest_score is not None:
-                # new_options.append({'label': '関連のありそうな非機能テスト', 'value': '', 'disabled': True, 'style': {'border': '2px solid #ccc', 'padding': '5px'}})
-                new_options.append({
-                  'label': html.Div('関連性がありそうなテスト', style={'border': '2px solid #FFA500', 'padding': '5px', 'margin': '5px 0', 'color': '#333333'}),
-                  'value': 0,
-                  'disabled': True
-              })
-                new_options.extend(next_highest_options)
+                # 次に高いスコアのオプションにスタイルを適用して追加
+                for option in next_highest_options:
+                    styled_option = option.copy()
+                    styled_option['label'] = html.Div(option['label'], style={'color': '#888888', 'font-size': '16px'})  # 薄い色と小さめのフォント
+                    new_options.append(styled_option)
 
     # 重複を防ぐためのセットを使用
     seen = set()
@@ -1116,7 +1112,7 @@ def tree_display(node, category, pid,indent=''):
                 [
                   html.P('[' + str(calculate_contribution_percentage(node.id)) + '%' + ']', style={'display': 'inline-block', 'fontSize': 12, 'marginRight': '10px'}),
                   html.P('利用時品質要求', style={'display': 'inline-block', 'marginRight': '10px', 'border': '1px solid #000000', 'fontSize': 10}),
-                  html.Button(node.id, id={'type': 'button', 'index': node.id}, style={'display': 'inline-block', 'marginRight': '10px', 'fontSize': 13, 'background': 'none', 'fontWeight': 'bold', 'border': 'none'}),
+                  html.Button('['+node.type+"-"+str(node.cid)+'] ' + node.id, id={'type': 'button', 'index': node.id}, style={'display': 'inline-block', 'marginRight': '10px', 'fontSize': 13, 'background': 'none', 'fontWeight': 'bold', 'border': 'none'}),
                   dbc.Popover(
                     [
                       dcc.Input(
@@ -1163,7 +1159,7 @@ def tree_display(node, category, pid,indent=''):
                 [
                   html.P('[' + str(calculate_contribution_percentage(node.id)) + '%' + ']', style={'display': 'inline-block', 'fontSize': 12, 'marginRight': '10px'}),
                   html.P('製品品質要求', style={'display': 'inline-block', 'marginRight': '10px', 'border': '1px solid #000000', 'fontSize': 10}),
-                  html.Button(node.id, id={'type': 'button', 'index': node.id}, style={'display': 'inline-block', 'marginRight': '10px', 'fontSize': 13, 'background': 'none', 'fontWeight': 'bold', 'border': 'none'}),
+                  html.Button('['+node.type+"-"+str(node.cid)+'] ' + node.id, id={'type': 'button', 'index': node.id}, style={'display': 'inline-block', 'marginRight': '10px', 'fontSize': 13, 'background': 'none', 'fontWeight': 'bold', 'border': 'none'}),
                   dbc.Popover(dbc.RadioItems(options=make_options_from_catalog(node.other['subchar'], node),
                                            id={'type': 'radio', 'index': node.id}),
                             target={'type': 'button','index': node.id},
@@ -2594,7 +2590,7 @@ def up_node(input_value, button_list, radio_list, input_list, drop_list, url):
           if row[2] == radio_num[0]:
             if row[8] == 1 or row[8] == 2:
               node1 = node_calculation.make_tree(pid, '保守性')
-              node = node_calculation.add_child_to_node(node1, row[1], row[2], 1, 1, 'QRM', 'QRM')
+              node = node_calculation.add_child_to_node(node1, row[1], row[2], 1, 1, 'QRM', 'QRM', None)
               return tree_display(node,category,pid), dash.no_update
             else:
               result = row[9].split(',')

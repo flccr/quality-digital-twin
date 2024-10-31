@@ -330,7 +330,7 @@ def make_child(nid):
     cursor = connector.cursor()
 
     children = '''
-        SELECT qualitynode.type, qualitynode.content, support.contribution, qualitynode.subtype
+        SELECT qualitynode.type, qualitynode.content, support.contribution, qualitynode.subtype, qualitynode.cid
         FROM qualitynode
         JOIN support ON qualitynode.nid=support.source
         WHERE destination=%s;
