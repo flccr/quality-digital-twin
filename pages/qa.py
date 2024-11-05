@@ -74,14 +74,14 @@ def qa_layout(params):
     print(result[0])
 
     parameters = get_params_values(content[0][0])
-    print(parameters)
+    print(f'parameters: {parameters}')
     if isinstance(parameters, dict):
         print('Yes')
     else:
         print('No')
 
     replaced_result = replace_params(result[0], parameters)
-    print(replaced_result)
+    print(f'replaced_result: {replaced_result}')
 
     # テスト結果入力に利用
     values = result[0][10].split(",")
@@ -357,6 +357,17 @@ def add_test_result(current_content, test_result):
     current_content['test_result'] = test_result
     return current_content
 
+def get_target_value(content):
+    # 「目標」で始まるキーを検索し、その値を取得
+    for key, value in content.items():
+        if key.startswith('目標'):
+            return float(value)  # 値をfloat型に変換して返す
+    return None  # 目標が見つからない場合はNoneを返す
+
+def calculate_score(test_result, target, scoring_logic):
+    # 計算式を評価する
+    return eval(scoring_logic)
+
 @callback(
     Output('confirm-dialog', 'displayed'),
     Input('register-btn', 'n_clicks'),
@@ -386,13 +397,30 @@ def register_data(submit_n_clicks, input_value, history, url):
         if nid_match:
             nid = nid_match.group(1)
         current_content = write_db.get_current_content(nid)
-
+        print(f'current_content : {current_content}')
         test_result = input_value[0]
         new_content = add_test_result(current_content[0], test_result)
         print(f'new_content : {new_content}')
 
         # ノードのcontentにテスト結果を登録
         write_db.add_test_result(nid, new_content)
+        # 目標値の取得
+        target = get_target_value(current_content[0])
+
+        # スコア計算のためのロジックを取得
+        scoring_logic = catalog_db.get_scoring_logic(nid)[0]
+        print(f'scoring_logic: {scoring_logic}')
+
+        # スコアを計算しachievementに保存
+        if target is not None:
+            score = calculate_score(test_result, target, scoring_logic)
+            formatted_score = round(score * 100, 2)
+            print(f"100かけたスコア: {formatted_score}")
+            integer_score = int(formatted_score)
+            write_db.update_score(nid, integer_score)
+        else:
+            print("目標値が見つかりませんでした。")
+
 
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_entry = f"{timestamp}: 登録完了: {input_value[0]}"

@@ -865,3 +865,30 @@ def add_test_result(nid, new_content):
     connector.close()
 
   return None
+
+#########################################################
+# 機能：ノードのachievementを更新
+# 入力： nid(ノードID)
+# 戻り値： なし
+#########################################################
+def update_score(nid, score):
+  try:
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    update_query = '''
+                    UPDATE qualitynode SET achievement = %s  
+                    WHERE nid = %s;
+                  '''
+    cursor.execute(update_query, (score, nid))
+    connector.commit() 
+    print('登録が完了しました。')
+        
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return None

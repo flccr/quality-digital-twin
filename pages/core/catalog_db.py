@@ -335,3 +335,35 @@ def get_formulas(id):
         connector.close()
 
     return result
+
+#########################################################
+# 機能：   カタログのscoring_logic取得
+# 入力：   テストのID
+# 戻り値： DBにあるカタログのスコア算出ロジック情報
+#########################################################
+def get_scoring_logic(id):
+    try:
+        connector = get_connector()
+        cursor = connector.cursor()
+        
+        info = '''
+            SELECT catalog.scoring_logic
+            FROM catalog
+            JOIN (
+                SELECT CAST(content->>'catalog_id' AS INTEGER) AS extracted_catalog_id
+                FROM qualitynode
+                WHERE nid = %s
+            ) AS extracted
+            ON catalog.id = extracted.extracted_catalog_id;
+        '''
+        cursor.execute(info,(id,))
+        result = cursor.fetchone()
+
+    except (Exception, Error) as error:
+        print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+    finally:
+        cursor.close()
+        connector.close()
+
+    return result
