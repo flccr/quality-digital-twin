@@ -8,7 +8,7 @@ import pandas as pd
 import re
 
 from pages.qa import split_text
-from .core import write_db, node_calculation, catalog_db
+from .core import write_db, node_calculation, catalog_db, cost_calculator
 from node import quality_node, quality_activity, quality_implementation, quality_requirement
 from task import task
 import plotly.graph_objs as go
@@ -1563,7 +1563,7 @@ def tree_display(node, category, pid,indent=''):
                   'display': 'inline-block', 'fontSize': 12, 'marginRight': '2px', 'marginRight': '10px'}),
                 html.P('品質活動', style={
                   'display': 'inline-block', 'marginRight': '10px', 'border': '1px solid #000000', 'fontSize': 10}),
-                html.Button(catalog_db.get_catalog_name_by_json(node.other), id={'type': 'button', 'index': catalog_db.get_catalog_name_by_json(node.other)}, style={
+                html.Button('['+node.type+"-"+str(node.cid)+'] ' + catalog_db.get_catalog_name_by_json(node.other), id={'type': 'button', 'index': catalog_db.get_catalog_name_by_json(node.other)}, style={
                   'display': 'inline-block', 'marginRight': '10px', 'fontSize': 13, 'background': 'none', 'fontWeight': 'bold', 'border': 'none'}),
                 html.P(com, style={
                   'display': 'inline-block', 'marginRight': '3px', 'fontSize': 11}),
@@ -1640,20 +1640,29 @@ def tree_display(node, category, pid,indent=''):
 
 
 
-def create_list_from_activities(activities, nodes,current_pid):
+def create_list_from_activities(activities, nodes, current_pid):
     result = []
     global save_percent
     # ノードの辞書を作成して、nidで検索しやすくする
     node_dict = {node.nid: node for node in nodes}
     current_pid = current_pid
     percent_saved = 1
+    count = 0
     for activity in activities:
         content = activity.task
+        print(f"activity.subtype: '{activity.subtype}'")  # デバッグ用の出力
+        print(f"activity.subtype == 'nft': {activity.subtype == 'nft'}")  # 条件の評価結果
         if isinstance(content, dict):
-            content = str(content.get('subchar', ''))
+            if activity.subtype.strip() == 'nft':
+              print(f'act.subtype: {activity.subtype}です(nft)')
+              content = str(catalog_db.get_catalog_name_by_json(content))
+            else:
+              print(f'act.subtype: {activity.subtype}です(sa)')
+              content = str(content.get('subchar', ''))
         else:
             # contentが辞書でない場合（例えば、floatの場合）を処理
             content = str(content)
+        print(f'content: {content}')
         parent_statement = None
         parent_subchar = None
         nid = activity.nid  # アクティビティの nid を取得
@@ -1663,6 +1672,14 @@ def create_list_from_activities(activities, nodes,current_pid):
           if row[3] == content:
             parent_statement = row[2]
             task_cost = row[10]
+            print(f'保守性のタスクコスト： {task_cost}')
+            break
+        catalogs = catalog_db.get_names_of_catalogs()
+        for catalog in catalogs:
+          if catalog[0] == content:
+            parent_statement = write_db.read_parent_statement(activity.nid)
+            task_cost = cost_calculator.cost_calculator(activity.nid)
+            print(f'保守性以外のタスクコスト： {task_cost}')
             break
         #taskのコスト情報の更新
         for task in tasks:
@@ -1716,10 +1733,10 @@ def create_list_from_activities(activities, nodes,current_pid):
 
 
 # 品質活動からachievementが1ではないノードを取得
-non_achieved_activities = quality_activity.QualityActivity.get_non_achieved_activities()
+# non_achieved_activities = quality_activity.QualityActivity.get_non_achieved_activities()
 
 # 全てのノードを取得
-all_nodes = quality_node.QualityNode.fetch_all_nodes()
+# all_nodes = quality_node.QualityNode.fetch_all_nodes()
 
 assignments = task.TaskAssignment.fetch_all_assignments()
 tasks = task.Task.fetch_all_tasks() 
@@ -1981,8 +1998,10 @@ def edit_layout(params):
       }
       for member in members_data if str(member.pid) == current_pid
   ]  
+  non_achieved_activities_of_p = quality_activity.QualityActivity.get_non_achieved_activities(current_pid)
+  all_nodes_of_p = quality_node.QualityNode.fetch_all_nodes(current_pid)
   # ノードからリストを作成
-  list_ex = create_list_from_activities(non_achieved_activities, all_nodes,current_pid)
+  list_ex = create_list_from_activities(non_achieved_activities_of_p, all_nodes_of_p, current_pid)
   return dbc.Container(
    [
       dbc.Row(
@@ -2186,10 +2205,10 @@ def toggle_modal(open_clicks, close_clicks, confirm_clicks, is_open, card_styles
         global list_ex
         global current_pid
         # 品質活動からachievementが1ではないノードを取得
-        non_achieved_activities = quality_activity.QualityActivity.get_non_achieved_activities()
+        non_achieved_activities_of_p = quality_activity.QualityActivity.get_non_achieved_activities(current_pid)
         # 全てのノードを取得
-        all_nodes = quality_node.QualityNode.fetch_all_nodes()
-        list_ex = create_list_from_activities(non_achieved_activities, all_nodes, current_pid)
+        all_nodes_of_p = quality_node.QualityNode.fetch_all_nodes(current_pid)
+        list_ex = create_list_from_activities(non_achieved_activities_of_p, all_nodes_of_p, current_pid)
         return True, create_modal_content(list_ex, members)
     elif button_id == "close-body-scroll":
         return False, dash.no_update

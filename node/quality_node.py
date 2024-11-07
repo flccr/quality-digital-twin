@@ -77,14 +77,17 @@ class QualityNode:
     
     
     @staticmethod
-    def fetch_all_nodes():
+    def fetch_all_nodes(pid=None):
         nodes = []
         connector = None
         cursor = None
         try:
             connector = write_db.get_connector()
             cursor = connector.cursor()
-            cursor.execute('SELECT * FROM qualitynode')
+            if pid == None:
+                cursor.execute('SELECT * FROM qualitynode')
+            else:
+                cursor.execute('SELECT * FROM qualitynode WHERE pid = %s', (pid,))
             records = cursor.fetchall()
             node_support = QualityNode.get_node_support()
             for record in records:

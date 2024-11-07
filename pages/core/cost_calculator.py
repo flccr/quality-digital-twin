@@ -1,5 +1,5 @@
 import re
-import catalog_db
+from pages.core import catalog_db 
 
 # # content データの取得
 # content = catalog_db.get_content(1003)[0][0]

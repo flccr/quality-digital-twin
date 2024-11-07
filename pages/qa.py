@@ -365,7 +365,6 @@ def get_target_value(content):
     return None  # 目標が見つからない場合はNoneを返す
 
 def calculate_score(test_result, target, scoring_logic):
-    # 計算式を評価する
     return eval(scoring_logic)
 
 @callback(

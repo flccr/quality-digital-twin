@@ -8,15 +8,32 @@ class QualityActivity(quality_node.QualityNode):
     #デバック用
     def __str__(self):
         return f'QualityActivity(nid={self.nid}, type={self.type})'
+    # @staticmethod
+    # def get_quality_activities():
+    #     all_nodes = quality_node.QualityNode.fetch_all_nodes()
+    #     return [node for node in all_nodes if node.type == 'ACT']
+    
     @staticmethod
-    def get_quality_activities():
-        all_nodes = quality_node.QualityNode.fetch_all_nodes()
-        return [node for node in all_nodes if node.type == 'ACT']
+    def get_quality_activities(pid=None):
+        if pid != None:
+            all_nodes = quality_node.QualityNode.fetch_all_nodes(pid)
+            return [node for node in all_nodes if node.type == 'ACT'] 
+        else:
+            all_nodes = quality_node.QualityNode.fetch_all_nodes()
+            return [node for node in all_nodes if node.type == 'ACT'] 
+    # @staticmethod
+    # def get_non_achieved_activities():
+    #     activities = QualityActivity.get_quality_activities()
+    #     return [activity for activity in activities if activity.achievement != 1]
 
     @staticmethod
-    def get_non_achieved_activities():
-        activities = QualityActivity.get_quality_activities()
-        return [activity for activity in activities if activity.achievement != 1]
+    def get_non_achieved_activities(pid=None):
+        if pid != None:
+            activities = QualityActivity.get_quality_activities(pid)
+            return [activity for activity in activities if activity.achievement != 1]
+        else:
+            activities = QualityActivity.get_quality_activities()
+            return [activity for activity in activities if activity.achievement != 1]
 
     def get_bottom_req(self):
         pass

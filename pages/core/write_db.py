@@ -892,3 +892,42 @@ def update_score(nid, score):
     connector.close()
 
   return None
+
+
+
+#########################################################
+# 機能：nidから親の要求文を取得
+# 入力： nid ノードのID
+# 戻り値：
+#########################################################
+def read_parent_statement(nid):
+  try:
+    # PostgreSQLに接続
+    connector = get_connector()    
+    cursor = connector.cursor() 
+
+    check_aim = '''
+      SELECT destination
+      FROM support
+      WHERE source = %s
+      '''
+    cursor.execute(check_aim, (nid,))
+    result = cursor.fetchone()
+
+    check_statement = '''
+              SELECT content ->> 'statement'
+              FROM qualitynode
+              WHERE nid = %s ;
+          '''
+    cursor.execute(check_statement, (result,))
+    result = cursor.fetchone()
+
+    
+  except (Exception, Error) as error:
+    print('PostgreSQLへの接続時のエラーが発生しました:', error)
+
+  finally:
+    cursor.close()
+    connector.close()
+
+  return result
